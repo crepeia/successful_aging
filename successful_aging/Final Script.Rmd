@@ -1,0 +1,182 @@
+---
+title: "Successuful Aging"
+author: Natália Scoralick and Elizabeth do Nascimento - Universidade Federal de Minas
+  Gerais
+date: "15 de maio de 2016"
+output:
+  word_document:
+    toc: yes
+  pdf_document:
+    toc: yes
+  html_document:
+    fig_caption: yes
+    fig_height: 7
+    fig_width: 9
+    keep_md: yes
+    toc: yes
+---
+
+#Successuful Aging
+
+All files used here are availible in a public repository licensed under MIT Licences and accessible by the following url:
+
+https://github.com/crepeia/saging
+
+You can access the final report here:
+
+http://rpubs.com/leomartinsjf/saging
+
+Statistics consulting work was made by Leonardo Fernandes Martins. If you need help to understand, reproduce or cite this analysis - reach me out at:
+
+leomartinsjf@gmail.com
+
+
+
+#Loading required packages
+```{r First, message=FALSE, warning=FALSE, include=FALSE}
+require(foreign) # Read data stored SPSS
+require(car) #Recode Variables
+require(psych) #Psychometrics
+require(lavaan) #Confirmatory and SEM
+require(semPlot) # Plots for SEM
+require(semTools) # Comparing SEM models
+require(ggplot2) # Plots
+require(gvlma) # Regression Assumptions 
+require(QuantPsyc) # Beta Coefficients
+require(Hmisc) # Regression Diagnostic
+require(MASS) # Confidence Interval for Model Parameter
+library(htmlTable) # Generating Tables - easy to copy and paste
+library(plyr) # Simple Rounding 
+
+# Some packages are listed but were not used here 
+
+```
+
+#Preparing all data
+```{r Second, message=FALSE, warning=FALSE, include=T}
+#Setting Directory
+setwd("~/successful_aging")
+
+#Importing SPSS file .sav
+base.dat <- read.spss("Base.sav", to.data.frame = T, use.missings = T)
+```
+
+
+#Selecting only working variables
+```{r, message=FALSE, warning=FALSE, include=T}
+saging <- base.dat[ ,c(3,6:27)]
+
+
+saging <- base.dat[ ,c(2,4,5,6,7,8,9,3,10:27)]
+
+#As dataframe
+saging<-as.data.frame(saging)
+
+#As factor
+
+saging[,c(1)]<-as.factor(saging[,c(1)])
+saging[,c(2)]<-as.factor(saging[,c(2)])
+saging[,c(3)]<-as.factor(saging[,c(3)])
+saging[,c(4)]<-as.factor(saging[,c(4)])
+saging[,c(5)]<-as.factor(saging[,c(5)])
+saging[,c(6)]<-as.factor(saging[,c(6)])
+saging[,c(7)]<-as.factor(saging[,c(7)])
+
+saging<-as.data.frame(saging)
+
+#As numeric
+for (i in c(7:26)) {
+saging[,c(i)]<-as.numeric(saging[,c(i)])
+}
+
+#Sabedoria
+saging$sabed<- saging$X.3dwscogAFC + saging$X.3dwsrefAFC + saging$X.3dwsafeAFC
+```
+
+#Variables Summary - Descriptive Stats
+```{r}
+#Status Social Economic - Variables
+
+##Descriptive 
+describe(saging)
+summary(saging)
+```
+
+#Correlations among study variables
+```{r}
+sagingcorr <- saging[ ,c("esvtotal", "autosaude", "gdstotal", "voctotal", "rmtotal", "qsvbusca", "qsvpresenca", "X.3dwstotalAFC", "qcspatotal")]
+#r<-tcor$r 
+#r <- txtRound(r, 2) 
+#r
+#htmlTable(r)
+
+sagingcorr[,c("autosaude")]<-as.numeric(sagingcorr[,c("autosaude")])
+tcor<-corr.test(sagingcorr)
+
+#p<-tcor$p
+#p <- txtRound(p, 2)
+#p
+#htmlTable(p) - only 
+```
+
+
+#Structural Model 
+```{r}
+#Saging Model 
+
+saging1 <- '
+# measurement model
+envels =~ esvtotal + autosaude + gdstotal
+
+
+# regressions
+envels ~ voctotal + rmtotal + qsvbusca + qsvpresenca + X.3dwstotalAFC + qcspatotal
+
+
+#Correlations and Residuals 
+
+gdstotal ~~ gdstotal 
+esvtotal ~~ esvtotal
+autosaude ~~ autosaude
+envels ~~ envels
+'
+
+#Model Fit
+fitsaging1 <- sem(saging1, estimator="WLSMVS", mimic = "Mplus", data = saging,
+        ordered=c("autosaude"))
+
+#Model Summary 
+summary(fitsaging1, standardized=T, fit.measures=T, rsquare=T)
+
+#Model Fit Measures
+fitMeasures(fitsaging1, c("chisq","df","rmsea","rmsea.ci.lower", "rmsea.ci.upper", "srmr", "cfi", "tli", "nfi", "ecvi"))
+moreFitIndices(fitsaging1, fit.measures = "all", nPrior = 303)
+
+#Parameters Estimates
+EstPCA2rf <- parameterEstimates(fitsaging1, standardized=T, ci=F)
+subset(EstPCA2rf, op == "=~")
+
+#q <- txtRound(EstPCA2rf, 2) - Short script to genarete easy copy and paste tables
+#q
+#htmlTable(q)
+
+#Modification Index
+MIPCA2rf<-modindices(fitsaging1)
+MIIPCA2rf<- MIPCA2rf[which(MIPCA2rf$mi>10),]
+print(MIIPCA2rf)
+```
+
+
+```{r}
+#Model Plot
+semPaths(fitsaging1, what="path", whatLabels ="std", edge.label.cex = 0.7, exoVar = F, exoCov = T, layout = "tree2", optimizeLatRes=T, style = "lisrel", curve= 0.9, sizeLat = 5, sizeLat2 = 5, sizeMan = 3, sizeMan2 = 3, title = T, thresholds = F, curvePivot=T, intercepts = F, residuals = F)
+
+#Define Title
+title(main = "Figura 1. Modelo de Equação Estrutural para Envelhecimento Saudável(n=303)", line = 1)
+
+#Define Subtitle
+title(sub=chi^2~(31)==272.039 ~ "CFI=0.919; TLI=0.858; NFI=0.874; RMSEA=0.068; 90%CI(0.037-0.057)" , line = 3, font.sub = 1, cex.sub = 0.5)
+```
+
+
+

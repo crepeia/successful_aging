@@ -1,0 +1,213 @@
+---
+title: "Successuful Aging"
+author: "Leonardo Martins"
+date: "09 de abril de 2016"
+output:
+  pdf_document:
+    toc: yes
+  html_document:
+    fig_caption: yes
+    fig_height: 7
+    fig_width: 9
+    keep_md: yes
+    toc: yes
+  word_document:
+    toc: yes
+---
+
+All files used here are availible in a public repository licensed under MIT Licences and accessible by the following url:
+
+https://github.com/crepeia/saging
+
+
+#Preparing new analysis
+
+#Loading required packages
+```{r First, message=FALSE, warning=FALSE, include=FALSE}
+require(foreign) # Read data stored SPSS
+require(car) #Recode Variables
+require(psych) #Psychometrics
+require(lavaan) #Confirmatory and SEM
+require(semPlot) # Plots for SEM
+require(semTools) # Comparing SEM models
+require(ggplot2) # Plots
+require(gvlma) # Regression Assumptions 
+require(QuantPsyc) # Beta Coefficients
+require(Hmisc)
+require(MASS)
+```
+
+#Preparing all data
+```{r Second, message=FALSE, warning=FALSE, include=T}
+#Setting Directory
+setwd("~/successful_aging")
+
+#Importing SPSS file .sav
+base.dat <- read.spss("Base.sav", to.data.frame = T, use.missings = T)
+```
+
+
+#Selecting only working variables
+```{r, message=FALSE, warning=FALSE, include=T}
+saging <- base.dat[ ,c(3,6:27)]
+
+
+saging <- base.dat[ ,c(2,4,5,6,7,8,9,3,10:27)]
+
+#As dataframe
+saging<-as.data.frame(saging)
+
+#As factor
+
+saging[,c(1)]<-as.factor(saging[,c(1)])
+saging[,c(2)]<-as.factor(saging[,c(2)])
+saging[,c(3)]<-as.factor(saging[,c(3)])
+saging[,c(4)]<-as.factor(saging[,c(4)])
+saging[,c(5)]<-as.factor(saging[,c(5)])
+saging[,c(6)]<-as.factor(saging[,c(6)])
+saging[,c(7)]<-as.factor(saging[,c(7)])
+
+saging<-as.data.frame(saging)
+
+#As numeric
+for (i in c(7:26)) {
+saging[,c(i)]<-as.numeric(saging[,c(i)])
+}
+
+#Sabedoria
+saging$sabed<- saging$X.3dwscogAFC + saging$X.3dwsrefAFC + saging$X.3dwsafeAFC
+```
+
+#Variables Summary - Descriptive Stats
+```{r}
+#Status Social Economic - Variables
+
+##Descriptive 
+describe(saging)
+summary(saging)
+```
+
+```{r}
+#Saging
+
+#Saging - First Model
+
+saging1 <- '
+
+# measurement model
+envels =~ esvtotal + autosaude + gdstotal 
+
+
+# regressions
+envels ~ voctotal + rmtotal + qsvpresenca + qsvbusca + X.3dwstotalAFC + qcspatotal
+
+
+#correlations and residuals 
+
+gdstotal ~~ gdstotal 
+esvtotal ~~ esvtotal
+autosaude ~~ autosaude
+envels ~~ envels
+
+
+
+
+#Mod Index
+
+'
+
+fitsaging1 <- sem(saging1, estimator="WLSMVS", mimic = "Mplus", data = saging,
+        ordered=c("autosaude"))
+
+#Model Summary 
+summary(fitsaging1, standardized=T, fit.measures=T, rsquare=T)
+
+#Model Fit Measures
+fitMeasures(fitsaging1, c("chisq","df","rmsea","rmsea.ci.lower", "rmsea.ci.upper", "srmr", "cfi", "tli", "nfi", "ecvi"))
+
+
+#Parameters Estimates
+EstPCA2rf <- parameterEstimates(fitsaging1, standardized=T, ci=F)
+subset(EstPCA2rf, op == "=~")
+
+#Modification Index
+MIPCA2rf<-modindices(fitsaging1)
+MIIPCA2rf<- MIPCA2rf[which(MIPCA2rf$mi>10),]
+print(MIIPCA2rf)
+
+#Model Plot
+semPaths(fitsaging1, what="path", whatLabels ="std", edge.label.cex = 0.7, exoVar = F, exoCov = T, layout = "tree2", optimizeLatRes=T, style = "lisrel", curve= 0.9, sizeLat = 5, sizeLat2 = 5, sizeMan = 3, sizeMan2 = 3, title = T, thresholds = F, curvePivot=T, intercepts = F, residuals = F)
+
+#Define Title
+title(main = "Figure 1. Structural Equation Model For Successful Aging", line = 1)
+
+#Define Subtitle
+title(sub = expression("Fit measures:" ~ chi^2~(31)==272,039 ~", p<0.001, n=303; CFI=0.360; TLI=0.401; NFI=0.986; RMSEA=0.160; 90%CI(0.146-0.175); SRMR=0.045"), line = 3, font.sub = 1, cex.sub = 0.5)
+
+moreFitIndices(fitsaging1, fit.measures = "all", nPrior = 303)
+
+```
+
+
+
+```{r}
+#Saging
+
+#Saging - First Model
+
+saging1 <- '
+
+# measurement model
+envels =~ esvtotal + autosaude + gdstotal
+
+
+# regressions
+envels ~ voctotal + rmtotal + qsvbusca + qsvpresenca + X.3dwstotalAFC + qcspatotal
+
+
+#correlations and residuals 
+
+gdstotal ~~ gdstotal 
+esvtotal ~~ esvtotal
+autosaude ~~ autosaude
+envels ~~ envels
+
+
+
+
+#Mod Index
+
+'
+
+fitsaging1 <- sem(saging1, estimator="WLSMVS", mimic = "Mplus", data = saging,
+        ordered=c("autosaude"))
+
+#Model Summary 
+summary(fitsaging1, standardized=T, fit.measures=T, rsquare=T)
+
+#Model Fit Measures
+fitMeasures(fitsaging1, c("chisq","df","rmsea","rmsea.ci.lower", "rmsea.ci.upper", "srmr", "cfi", "tli", "nfi", "ecvi"))
+moreFitIndices(fitsaging1, fit.measures = "all", nPrior = 303)
+
+#Parameters Estimates
+EstPCA2rf <- parameterEstimates(fitsaging1, standardized=T, ci=F)
+subset(EstPCA2rf, op == "=~")
+
+#Modification Index
+MIPCA2rf<-modindices(fitsaging1)
+MIIPCA2rf<- MIPCA2rf[which(MIPCA2rf$mi>10),]
+print(MIIPCA2rf)
+
+#Model Plot
+semPaths(fitsaging1, what="path", whatLabels ="std", edge.label.cex = 0.7, exoVar = F, exoCov = T, layout = "tree2", optimizeLatRes=T, style = "lisrel", curve= 0.9, sizeLat = 5, sizeLat2 = 5, sizeMan = 3, sizeMan2 = 3, title = T, thresholds = F, curvePivot=T, intercepts = F, residuals = F)
+
+#Define Title
+title(main = "Figure 1. Structural Equation Model For Successful Aging", line = 1)
+
+#Define Subtitle
+title(sub = expression("Fit measures: n=303; CFI=0.919; TLI=0.858; NFI=0.874; RMSEA=0.068; 90%CI(0.037-0.057)" ~ chi^2~(31)==272.039), line = 3, font.sub = 1, cex.sub = 0.5)
+
+
+
+```
+

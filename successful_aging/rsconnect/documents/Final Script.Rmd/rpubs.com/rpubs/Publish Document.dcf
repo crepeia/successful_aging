@@ -1,0 +1,7 @@
+name: Publish Document
+account: rpubs
+server: rpubs.com
+appId: https://api.rpubs.com/api/v1/document/181210/1476aeb4ac8d422792b47350c8498cac
+bundleId: https://api.rpubs.com/api/v1/document/181210/1476aeb4ac8d422792b47350c8498cac
+url: http://rpubs.com/leomartinsjf/181210
+when: 1463360942.52977
